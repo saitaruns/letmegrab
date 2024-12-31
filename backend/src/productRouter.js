@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { body, validationResult } = require('express-validator');
-const { connect } = require('./productRouter');
+const { encrypt, decrypt } = require('../lib/crypt');
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 10, SKU, product_name, category_id, material_ids, price } = req.query;
     const filters = {};
 
-    if (SKU) filters.SKU = { contains: SKU, mode: 'insensitive' };
+    if (SKU) filters.SKU = { contains: encrypt(SKU), mode: 'insensitive' };
     if (product_name) filters.product_name = { contains: product_name, mode: 'insensitive' };
     if (category_id) filters.category_id = parseInt(category_id);
     if (material_ids) filters.materials = { some: { material_id: { in: material_ids.map(id => parseInt(id)) } } };
@@ -25,6 +25,9 @@ router.get('/', async (req, res) => {
                 category: true,
                 materials: true,
             },
+        });
+        products.forEach(product => {
+            product.SKU = decrypt(product.SKU); // Decrypt SKU
         });
         const total = await prisma.product.count({ where: filters });
         res.json({
@@ -56,7 +59,7 @@ router.post(
         try {
             const product = await prisma.product.create({
                 data: {
-                    SKU,
+                    SKU: encrypt(SKU), // Encrypt SKU
                     product_name,
                     category: {
                         connect: { category_id: parseInt(category_id) },
@@ -73,6 +76,7 @@ router.post(
                     materials: true,
                 },
             });
+            product.SKU = decrypt(product.SKU); // Decrypt SKU before sending response
             res.status(201).json(product);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -90,6 +94,7 @@ router.get('/get/:id', async (req, res) => {
                 materials: true,
             },
         });
+        product.SKU = decrypt(product.SKU); // Decrypt SKU
         res.json(product);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -110,13 +115,14 @@ router.put(
         }
 
         const { id } = req.params;
-        const { material_ids, ...updateData } = req.body;
+        const { material_ids, SKU, ...updateData } = req.body;
 
         try {
             const product = await prisma.product.update({
                 where: { product_id: parseInt(id) },
                 data: {
                     ...updateData,
+                    SKU: SKU ? encrypt(SKU) : undefined, // Encrypt SKU if provided
                     materials: {
                         set: material_ids.map(id => ({
                             material_id: parseInt(id),
@@ -128,7 +134,7 @@ router.put(
                     materials: true,
                 },
             });
-
+            product.SKU = decrypt(product.SKU); // Decrypt SKU before sending response
             res.json(product);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -157,7 +163,6 @@ router.get('/highest-price/category', async (req, res) => {
             },
         });
 
-        console.log(highestPriceProducts);
         res.json(highestPriceProducts);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -207,6 +212,11 @@ router.get('/no-media', async (req, res) => {
                 materials: true,
             },
         });
+
+        productsWithoutMedia.forEach(product => {
+            product.SKU = decrypt(product.SKU); // Decrypt SKU
+        });
+
         res.json(productsWithoutMedia);
     } catch (error) {
         res.status(500).json({ error: error.message });

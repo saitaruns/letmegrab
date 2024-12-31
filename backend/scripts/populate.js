@@ -1,19 +1,21 @@
 const { PrismaClient } = require('@prisma/client');
 const { faker } = require('@faker-js/faker');
+const { encrypt } = require('../lib/crypt');
 
 const prisma = new PrismaClient();
+const CNT = 2
 
 const generateFakeData = async () => {
     const categories = await prisma.category.createManyAndReturn({
-        data: faker.helpers.uniqueArray(faker.commerce.department, 10).map(name => ({ category_name: name })),
+        data: faker.helpers.uniqueArray(faker.commerce.department, CNT).map(name => ({ category_name: name })),
     });
     const materials = await prisma.material.createManyAndReturn({
-        data: faker.helpers.uniqueArray(faker.commerce.productMaterial, 10).map(name => ({ material_name: name })),
+        data: faker.helpers.uniqueArray(faker.commerce.productMaterial, CNT).map(name => ({ material_name: name })),
     });
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < CNT; i++) {
         const product = await prisma.product.create({
             data: {
-                SKU: faker.string.uuid(),
+                SKU: encrypt(faker.company.buzzPhrase()),
                 product_name: faker.commerce.productName(),
                 price: parseFloat(faker.commerce.price()),
                 category: {
