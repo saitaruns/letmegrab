@@ -14,6 +14,7 @@ interface HighestPriceProduct {
     _max: {
         price: number;
     };
+    category_name: string;
 }
 
 interface ProductWithoutMedia {
@@ -24,6 +25,7 @@ interface ProductWithoutMedia {
 
 const fetchHighestPriceProducts = async () => {
     const response = await axios.get('http://localhost:4312/api/products/highest-price/category');
+    console.log(response.data);
     return response.data;
 };
 
@@ -41,20 +43,23 @@ const Statistics: React.FC = () => {
     const { data: highestPriceProducts = [] } = useQuery({
         queryKey: ['highestPriceProducts'],
         queryFn: fetchHighestPriceProducts,
+        staleTime: 5 * 60 * 1000,
     }
     );
     const { data: priceRangeCount = {} } = useQuery<Record<string, number>>({
         queryKey: ['priceRangeCount'],
         queryFn: fetchPriceRangeCount,
+        staleTime: 5 * 60 * 1000,
     });
     const { data: productsWithoutMedia = [] } = useQuery({
         queryKey: ['productsWithoutMedia'],
         queryFn: fetchProductsWithoutMedia,
+        staleTime: 5 * 60 * 1000,
     });
 
     return (
         <div>
-            <div className='flex gap-2'>
+            <div className='flex gap-5'>
                 <Card className="w-1/3 h-64 overflow-auto">
                     <CardHeader>
                         <CardTitle>Category Wise Highest Price of Product</CardTitle>

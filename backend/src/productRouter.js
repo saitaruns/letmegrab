@@ -1,25 +1,38 @@
 const { Router } = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { body, validationResult } = require('express-validator');
+const { connect } = require('./productRouter');
 
 const router = Router();
 const prisma = new PrismaClient();
+
 router.get('/', async (req, res) => {
-    const { page = 1, limit = 10, SKU, product_name, category_id, material_ids } = req.query;
+    const { page = 1, limit = 10, SKU, product_name, category_id, material_ids, price } = req.query;
     const filters = {};
 
     if (SKU) filters.SKU = { contains: SKU, mode: 'insensitive' };
     if (product_name) filters.product_name = { contains: product_name, mode: 'insensitive' };
     if (category_id) filters.category_id = parseInt(category_id);
-    if (material_ids) filters.material_ids = { hasSome: material_ids.map(id => parseInt(id)) };
+    if (material_ids) filters.materials = { some: { material_id: { in: material_ids.map(id => parseInt(id)) } } };
+    if (price) filters.price = parseFloat(price);
 
     try {
         const products = await prisma.product.findMany({
             where: filters,
             skip: (page - 1) * limit,
             take: parseInt(limit),
+            include: {
+                category: true,
+                materials: true,
+            },
         });
-        res.json(products);
+        const total = await prisma.product.count({ where: filters });
+        res.json({
+            data: products,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+        });
     } catch (error) {
         res.status(500).json(error);
     }
@@ -39,9 +52,26 @@ router.post(
         }
 
         const { SKU, product_name, category_id, material_ids, price } = req.body;
+
         try {
             const product = await prisma.product.create({
-                data: { SKU, product_name, category_id, material_ids, price },
+                data: {
+                    SKU,
+                    product_name,
+                    category: {
+                        connect: { category_id: parseInt(category_id) },
+                    },
+                    price,
+                    materials: {
+                        connect: material_ids.map(id => ({
+                            material_id: parseInt(id),
+                        })),
+                    },
+                },
+                include: {
+                    category: true,
+                    materials: true,
+                },
             });
             res.status(201).json(product);
         } catch (error) {
@@ -50,19 +80,21 @@ router.post(
     }
 );
 
-
 router.get('/get/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const product = await prisma.product.findUnique({
             where: { product_id: parseInt(id) },
+            include: {
+                category: true,
+                materials: true,
+            },
         });
         res.json(product);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-}
-);
+});
 
 router.put(
     '/:id',
@@ -78,12 +110,25 @@ router.put(
         }
 
         const { id } = req.params;
-        const updateData = req.body;
+        const { material_ids, ...updateData } = req.body;
+
         try {
             const product = await prisma.product.update({
                 where: { product_id: parseInt(id) },
-                data: updateData,
+                data: {
+                    ...updateData,
+                    materials: {
+                        set: material_ids.map(id => ({
+                            material_id: parseInt(id),
+                        })),
+                    }
+                },
+                include: {
+                    category: true,
+                    materials: true,
+                },
             });
+
             res.json(product);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -112,6 +157,7 @@ router.get('/highest-price/category', async (req, res) => {
             },
         });
 
+        console.log(highestPriceProducts);
         res.json(highestPriceProducts);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -155,6 +201,10 @@ router.get('/no-media', async (req, res) => {
                 media: {
                     none: {},
                 },
+            },
+            include: {
+                category: true,
+                materials: true,
             },
         });
         res.json(productsWithoutMedia);

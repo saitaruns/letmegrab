@@ -35,6 +35,14 @@ CREATE TABLE "ProductMedia" (
     CONSTRAINT "ProductMedia_pkey" PRIMARY KEY ("media_id")
 );
 
+-- CreateTable
+CREATE TABLE "ProductMaterial" (
+    "product_id" INTEGER NOT NULL,
+    "material_id" INTEGER NOT NULL,
+
+    CONSTRAINT "ProductMaterial_pkey" PRIMARY KEY ("product_id","material_id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Product_SKU_key" ON "Product"("SKU");
 
@@ -43,3 +51,9 @@ ALTER TABLE "Product" ADD CONSTRAINT "Product_category_id_fkey" FOREIGN KEY ("ca
 
 -- AddForeignKey
 ALTER TABLE "ProductMedia" ADD CONSTRAINT "ProductMedia_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "Product"("product_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductMaterial" ADD CONSTRAINT "ProductMaterial_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "Product"("product_id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductMaterial" ADD CONSTRAINT "ProductMaterial_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "Material"("material_id") ON DELETE RESTRICT ON UPDATE CASCADE;

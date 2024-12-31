@@ -41,9 +41,9 @@ export const FormSchema = z.object({
 export const FilterFormSchema = z.object({
     SKU: z.string().optional(),
     product_name: z.string().optional(),
-    category_id: z.number().optional(),
+    category_id: z.number().nullable().optional(),
     material_ids: z.array(z.number()).optional(),
-    price: z.number().optional(),
+    price: z.number().nullable().optional(),
 });
 
 export type FormSchemaType = z.infer<typeof FormSchema>;
@@ -97,23 +97,26 @@ const ProductFilterForm = ({
         queryKey: ['categories'],
         queryFn: fetchCategories,
         placeholderData: keepPreviousData,
+        staleTime: 5 * 60 * 1000,
     });
 
     const { data: materials = [], isFetching: isMatFetching, isError: isMatError } = useQuery<Material[]>({
         queryKey: ['materials'],
         queryFn: fetchMaterials,
         placeholderData: keepPreviousData,
+        staleTime: 5 * 60 * 1000,
     });
 
     useEffect(() => {
         if (id) {
             // Fetch product data and set form values
-            axios.get<FormSchemaType>(`http://localhost:4312/api/products/get/${id}`).then(response => {
+            axios.get(`http://localhost:4312/api/products/get/${id}`).then(response => {
                 const product = response.data;
+                console.log(product);
                 setValue('SKU', product.SKU);
                 setValue('product_name', product.product_name);
                 setValue('category_id', product.category_id);
-                setValue('material_ids', product.material_ids);
+                setValue('material_ids', product.materials.map((material: Material) => material.material_id));
                 setValue('price', product.price);
             });
         }
@@ -128,13 +131,21 @@ const ProductFilterForm = ({
         }
     };
 
+    const clearForm = () => form.reset({
+        SKU: '',
+        product_name: '',
+        category_id: null,
+        material_ids: [],
+        price: null,
+    })
+
     return (
         <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {[
                     { name: 'SKU', label: 'SKU', type: 'text', placeholder: 'SKU' },
                     { name: 'product_name', label: 'Product Name', type: 'text', placeholder: 'Product Name' },
-                    { name: 'price', label: 'Price', type: 'number', placeholder: 'Price' },
+                    { name: 'price', label: 'Price', type: 'number', placeholder: 'Price' }
                 ].map(({ name, label, type, placeholder }) => (
                     <FormField
                         key={name}
@@ -146,14 +157,17 @@ const ProductFilterForm = ({
                                 <FormControl>
                                     <Input
                                         type={type}
+                                        step={type === 'number' ? '0.01' : undefined}
                                         placeholder={placeholder}
                                         {...field}
-                                        value={
-                                            typeof field.value !== 'number' ? field?.value?.toString() : field.value
-                                        }
+                                        value={String(field.value)}
+                                        defaultValue={""}
                                         onChange={
                                             type === 'number'
-                                                ? (e) => field.onChange(Number(e.target.value))
+                                                ? (e) => {
+                                                    console.log(e.target.value);
+                                                    field.onChange(Number(e.target.value))
+                                                }
                                                 : field.onChange
                                         }
                                     />
@@ -172,11 +186,15 @@ const ProductFilterForm = ({
                                 <FormLabel>Category</FormLabel>
                                 <Select
                                     onValueChange={(value) => field.onChange(Number(value))}
-                                    value={field?.value?.toString()}
+                                    defaultValue={String(field.value)}
+                                    {...field}
+                                    value={String(field.value)}
                                 >
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a category" />
+                                            <SelectValue
+                                                defaultValue={String(field.value)}
+                                                placeholder="Select a category" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -189,7 +207,7 @@ const ProductFilterForm = ({
                                         }) => (
                                             <SelectItem
                                                 key={category_id}
-                                                value={category_id.toString()}>
+                                                value={String(category_id)}>
                                                 {category_name}
                                             </SelectItem>
                                         ))}
@@ -210,22 +228,20 @@ const ProductFilterForm = ({
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <div className='p-1 border-dashed border rounded flex items-center gap-1'>
-                                                <Button variant="outline"
-                                                    className='flex-1'
-                                                >Select</Button>
+                                                <Button variant="outline" className='flex-1'>Select</Button>
                                                 {field.value &&
-                                                    field.value.length > 0 && <span className='ml-2'>{field?.value?.length} selected</span>}
+                                                    field.value.length > 0 && <span className='ml-2'>{field.value.length} selected</span>}
                                             </div>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
-                                            className='w-64'
+                                            className='w-64 h-64 overflow-y-auto'
                                         >
                                             <DropdownMenuLabel>Materials</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
                                             {materials?.map((material) => (
                                                 <DropdownMenuCheckboxItem
                                                     key={material.material_id}
-                                                    checked={field?.value?.includes(material.material_id)}
+                                                    checked={field.value?.includes(material.material_id)}
                                                     onCheckedChange={(checked) => {
                                                         if (checked) {
                                                             field.onChange([...(field?.value || []), material.material_id]);
@@ -245,6 +261,7 @@ const ProductFilterForm = ({
                         )}
                     />}
                 <div className='flex justify-end gap-2'>
+                    <Button onClick={clearForm} variant={'ghost'}>Clear</Button>
                     <Button type="submit">{submitText}</Button>
                     {id && <Button type="button" variant="destructive" onClick={handleDelete}>Delete</Button>}
                 </div>

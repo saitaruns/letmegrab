@@ -12,15 +12,16 @@ model Product {
   SKU          String    @unique
   product_name String
   category_id  Int
-  material_ids Int[]
   price        Float
   media        ProductMedia[]
   category     Category   @relation(fields: [category_id], references: [category_id])
+  materials    Material[]
 }
 
 model Material {
   material_id   Int      @id @default(autoincrement())
   material_name String
+  products      Product[]
 }
 
 model Category {
@@ -33,5 +34,5 @@ model ProductMedia {
   media_id   Int    @id @default(autoincrement())
   product_id Int
   url        String
-  product    Product @relation(fields: [product_id], references: [product_id])
+  product    Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
 }

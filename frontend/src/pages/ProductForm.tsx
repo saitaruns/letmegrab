@@ -16,9 +16,12 @@ const updateProduct = async ({ id, product }: { id: string; product: FilterFormS
 
 interface ProductFormProps {
     id?: string;
+    closeDialog: () => void;
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ id }) => {
+const ProductForm: React.FC<ProductFormProps> = ({ id,
+    closeDialog
+}) => {
     const queryClient = useQueryClient();
 
     const createMutation = useMutation<FilterFormSchemaType, Error, FilterFormSchemaType>({
@@ -41,6 +44,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ id }) => {
         } else {
             createMutation.mutate(data);
         }
+        closeDialog();
     };
 
     return (
@@ -51,6 +55,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ id }) => {
                 onSubmit={onSubmit}
                 submitText={id ? 'Update Product' : 'Add Product'}
                 schema={FormSchema}
+                defaultValues={{ SKU: '', product_name: '', category_id: null, material_ids: [], price: null }}
             />
         </div>
     );
