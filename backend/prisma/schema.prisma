@@ -1,0 +1,37 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  product_id   Int       @id @default(autoincrement())
+  SKU          String    @unique
+  product_name String
+  category_id  Int
+  material_ids Int[]
+  price        Float
+  media        ProductMedia[]
+  category     Category   @relation(fields: [category_id], references: [category_id])
+}
+
+model Material {
+  material_id   Int      @id @default(autoincrement())
+  material_name String
+}
+
+model Category {
+  category_id   Int      @id @default(autoincrement())
+  category_name String
+  products      Product[]
+}
+
+model ProductMedia {
+  media_id   Int    @id @default(autoincrement())
+  product_id Int
+  url        String
+  product    Product @relation(fields: [product_id], references: [product_id])
+}
