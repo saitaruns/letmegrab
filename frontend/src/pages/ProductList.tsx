@@ -12,12 +12,27 @@ import {
 } from '@/components/ui/table';
 import { ChevronDown, ChevronUp, Edit2, Trash } from 'lucide-react';
 import { ProductDialog } from '@/components/product-dialog';
-import ProductFilterForm, { FilterFormSchema, FilterFormSchemaType } from '@/components/product-filter-form';
+import ProductFilterForm, { FilterFormSchemaType } from '@/components/product-filter-form';
 import { SubmitHandler } from 'react-hook-form';
 import Statistics from './Statistics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+
+interface Product {
+  product_id: number;
+  SKU: string;
+  product_name: string;
+  category: {
+    category_id: number;
+    category_name: string
+  };
+  materials: {
+    material_id: number;
+    material_name: string;
+  }[];
+  price: number;
+}
 
 const fetchProducts = async (page: number, limit: number, filters: FilterFormSchemaType) => {
   const response = await axios.get('http://localhost:4312/api/products', {
@@ -33,11 +48,9 @@ const ProductList: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [limit] = useState<number>(10);
   const [filters, setFilters] = useState<FilterFormSchemaType>({
-    SKU: '',
     product_name: '',
     category_id: null,
     material_ids: [],
-    price: null,
   });
   const [isStatisticsVisible, setIsStatisticsVisible] = useState<boolean>(true);
 
@@ -74,21 +87,19 @@ const ProductList: React.FC = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4 shadow-md p-5">Product List</h1>
-      <div className='flex gap-2 w-11/12 mx-auto p-4'>
-        <div className='space-y-3 w-3/12 pr-6'>
+      <div className='flex gap-2 w-11/12 flex-col md:flex-row mx-auto p-4'>
+        <div className='space-y-3 md:w-3/12 md:pr-6 border-b-2 md:border-b-0 pb-4 md:pb-0'>
           <h2 className='text-xl font-bold'>Filters</h2>
           <ProductFilterForm
             defaultValues={filters}
             onSubmit={onSubmit}
-            schema={FilterFormSchema}
-            submitText='Apply Filters'
           />
         </div>
-        <div className='flex-1 space-y-3'>
+        <div className='flex-1 space-y-3 pt-4 md:pt-0'>
           <div className='flex justify-between'>
             <div>
               <ProductDialog>
-                <Button>New Product</Button>
+                <Button>New</Button>
               </ProductDialog>
             </div>
             <div className="flex space-x-2">
@@ -129,17 +140,7 @@ const ProductList: React.FC = () => {
                     ))}
                   </TableRow>
                 )) :
-                  products?.map((product: FilterFormSchemaType & {
-                    product_id: number;
-                    category: {
-                      category_id: number;
-                      category_name: string
-                    };
-                    materials: {
-                      material_id: number;
-                      material_name: string;
-                    }[]
-                  }) => (
+                  products?.map((product: Product) => (
                     <TableRow key={product.product_id}>
                       <TableCell className='w-1/6'>{product.SKU}</TableCell>
                       <TableCell className='w-1/6'>{product.product_name}</TableCell>

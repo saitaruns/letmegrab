@@ -57,6 +57,16 @@ router.post(
         const { SKU, product_name, category_id, material_ids, price } = req.body;
 
         try {
+            const existingProduct = await prisma.product.findFirst({
+                where: { SKU: encrypt(SKU) },
+            });
+
+            console.log(existingProduct, SKU, encrypt(SKU));
+
+            if (existingProduct) {
+                return res.status(400).json({ error: 'Product with same SKU already exists' });
+            }
+
             const product = await prisma.product.create({
                 data: {
                     SKU: encrypt(SKU), // Encrypt SKU

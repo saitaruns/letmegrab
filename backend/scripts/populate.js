@@ -3,7 +3,7 @@ const { faker } = require('@faker-js/faker');
 const { encrypt } = require('../lib/crypt');
 
 const prisma = new PrismaClient();
-const CNT = 2
+const CNT = 50;
 
 const generateFakeData = async () => {
     const categories = await prisma.category.createManyAndReturn({
