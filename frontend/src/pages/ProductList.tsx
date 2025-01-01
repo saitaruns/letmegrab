@@ -87,7 +87,7 @@ const ProductList: React.FC = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4 shadow-md p-5">Product List</h1>
-      <div className='flex gap-2 w-11/12 flex-col md:flex-row mx-auto p-4'>
+      <div className='flex gap-2 w-full md:w-11/12 flex-col md:flex-row mx-auto p-4'>
         <div className='space-y-3 md:w-3/12 md:pr-6 border-b-2 md:border-b-0 pb-4 md:pb-0'>
           <h2 className='text-xl font-bold'>Filters</h2>
           <ProductFilterForm
@@ -171,8 +171,8 @@ const ProductList: React.FC = () => {
           </Table>
         </div>
       </div>
-      <Separator className='w-11/12 mx-auto' />
-      <div className='w-11/12 mx-auto p-4 space-y-3'>
+      <Separator className='w-full md:w-11/12 mx-auto' />
+      <div className='w-full md:w-11/12 mx-auto p-4 space-y-3'>
         <Button
           variant={"ghost"}
           className='flex items-center justify-between w-full'
